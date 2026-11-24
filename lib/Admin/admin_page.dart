@@ -72,18 +72,23 @@ class _AdminPageState extends State<AdminPage> {
   }
 
   Widget login() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    return _PageList(
       children: [
+        const Icon(Icons.restaurant_menu, size: 40),
+        const SizedBox(height: 12),
+        const Center(child: Text('BlueBite', style: _heading)),
+        const SizedBox(height: 24),
         TextField(
           decoration: const InputDecoration(labelText: 'Username'),
           onChanged: (s) => user = s,
         ),
+        const SizedBox(height: 14),
         TextField(
           decoration: const InputDecoration(labelText: 'Password'),
           obscureText: true,
           onChanged: (s) => sandi = s,
         ),
+        const SizedBox(height: 16),
         if (salah.isNotEmpty) Text(salah),
         ElevatedButton(
           onPressed: () => setState(() {

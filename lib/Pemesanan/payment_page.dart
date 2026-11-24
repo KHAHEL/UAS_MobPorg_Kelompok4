@@ -76,16 +76,19 @@ class _PaymentPageState extends State<PaymentPage> {
           title: const Text('Checkout'),
           actions: const [SwitchModeGelap()],
         ),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
+        body: _PageList(
           children: [
+            const Text('Ringkasan pesanan', style: _heading),
+            const SizedBox(height: 8),
             for (final item in cart) barisItem(item),
+            const Divider(),
+            const SizedBox(height: 8),
             Text(
               'Total ${formatRupiah(totalPrice)}',
               style: const TextStyle(fontSize: 20),
             ),
             const SizedBox(height: 16),
-            const Text('Metode pembayaran (simulasi)'),
+            const Text('Metode pembayaran', style: _title),
             for (final m in metodeBayar)
               RadioListTile<String>(
                 contentPadding: EdgeInsets.zero,
@@ -98,7 +101,7 @@ class _PaymentPageState extends State<PaymentPage> {
               ),
             const SizedBox(height: 8),
             // BARU: pilihan jadwal pengambilan (Date Picker dan Time Picker)
-            const Text('Jadwal pengambilan (opsional)'),
+            const Text('Jadwal pengambilan (opsional)', style: _title),
             Row(
               children: [
                 Expanded(

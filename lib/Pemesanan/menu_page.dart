@@ -16,20 +16,27 @@ class _DetailMenuState extends State<DetailMenu> {
     final sisa = stok(m) - dalamCart(m['id']);
     return Scaffold(
       appBar: AppBar(
-          title: const Text('Detail menu'),
-          actions: const [SwitchModeGelap()],
+        title: const Text('Detail menu'),
+        actions: const [SwitchModeGelap()],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: _PageList(
         children: [
+          fotoMenu(m, ukuran: 180, lebar: double.infinity),
+          const SizedBox(height: 18),
+          Text(m['category']),
+          const SizedBox(height: 4),
           Text(
             m['name'],
             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
+          const SizedBox(height: 6),
           Text(m['description']),
           Text(
-            "${m['category']} · ${formatRupiah(m['price'])} · Stok ${stok(m)}",
+            "${formatRupiah(m['price'])} · Stok ${stok(m)}",
+            style: _title,
           ),
+          const SizedBox(height: 18),
+          if (m['spicy']) const Text('Level pedas', style: _title),
           if (m['spicy'])
             DropdownButton<String>(
               isExpanded: true,
@@ -42,7 +49,7 @@ class _DetailMenuState extends State<DetailMenu> {
             ),
           Row(
             children: [
-              const Text('Jumlah'),
+              const Expanded(child: Text('Jumlah', style: _title)),
               IconButton(
                 tooltip: 'Kurangi',
                 onPressed: jumlah > 1 ? () => setState(() => jumlah--) : null,
@@ -58,6 +65,7 @@ class _DetailMenuState extends State<DetailMenu> {
               ),
             ],
           ),
+          const SizedBox(height: 12),
           ElevatedButton(
             onPressed: sisa < jumlah
                 ? null

@@ -38,87 +38,82 @@ class _CartPageState extends State<CartPage> {
     if (ya == true && mounted) setState(() => cart.remove(item));
   }
 
-  Widget tombol(IconData icon, VoidCallback? onTap) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(8),
-      onTap: onTap,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: biruMuda,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(
-          icon,
-          size: 18,
-          color: onTap == null ? Colors.black26 : warnaBiru,
-        ),
+  Widget tombol(IconData icon, String label, VoidCallback? onTap) {
+    return IconButton(
+      tooltip: label,
+      onPressed: onTap,
+      style: IconButton.styleFrom(
+        backgroundColor: biruMuda,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
+      color: warnaBiru,
+      disabledColor: Colors.black26,
+      icon: Icon(icon),
     );
   }
 
   Widget kartuItem(Map item) {
     final menu = menus.get(item['id']);
     final bisaTambah = menu != null && dalamCart(item['id']) < stok(menu);
-    // Card dibungkus GestureDetector agar bisa di-hold (long press)
     return GestureDetector(
-      onLongPress: () => konfirmasiHapus(item),
-      child: Card(
-        color: Theme.of(context).cardColor, // DIUBAH: ikut mode terang/gelap
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              fotoMenu(menu is Map ? menu : {}, ukuran: 76),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item['name'],
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (item['level'] != '')
-                      Text(
-                        'Pedas: ${item['level']}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.black54,
+        onLongPress: () => konfirmasiHapus(item),
+        child: Card(
+          color: Theme.of(context).cardColor,
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                Row(children: [
+                  fotoMenu(menu is Map ? menu : {}, ukuran: 76),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item['name'],
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                    const SizedBox(height: 4),
-                    Text(
-                      formatRupiah(item['price']),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: warnaBiru,
-                      ),
+                        if (item['level'] != '')
+                          Text(
+                            'Pedas: ${item['level']}',
+                            style: const TextStyle(
+                              fontSize: 13,
+
+                            ),
+                          ),
+                        const SizedBox(height: 4),
+                        Text(
+                          formatRupiah(item['price']),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: warnaBiru,
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                ]),
+                const Divider(),
+                Row(
+                  children: [
+                    const Spacer(),
+                    tombol(Icons.remove, 'Kurangi', () => ubahJumlah(item, -1)),
+                    Text("${item['quantity']}", style: _title),
+                    tombol(Icons.add, 'Tambah jumlah',
+                        bisaTambah ? () => ubahJumlah(item, 1) : null),
                   ],
                 ),
-              ),
-              tombol(Icons.remove, () => ubahJumlah(item, -1)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text(
-                  "${item['quantity']}",
-                  style: const TextStyle(fontSize: 15),
-                ),
-              ),
-              tombol(Icons.add, bisaTambah ? () => ubahJumlah(item, 1) : null),
-            ],
+              ],
+            ),
           ),
-        ),
-      ),
-    );
+        ));
   }
 
   @override
@@ -130,16 +125,19 @@ class _CartPageState extends State<CartPage> {
         title: const Text('Keranjang'),
         actions: const [SwitchModeGelap()],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: _PageList(
         children: [
+          if (cart.isNotEmpty) const Text('Item pesanan', style: _heading),
+          const SizedBox(height: 8),
           for (final item in cart) kartuItem(item),
           const SizedBox(height: 8),
           if (masalah != null) Text(masalah),
+          const SizedBox(height: 16),
           Text(
             'Total ${formatRupiah(totalPrice)}',
             style: const TextStyle(fontSize: 20),
           ),
+          const SizedBox(height: 12),
           ElevatedButton(
             onPressed: masalah != null
                 ? null

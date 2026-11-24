@@ -8,18 +8,20 @@ String labelStok(int sisa) {
 
 extension AdminMenu on _AdminPageState {
   Widget halamanMenuAdmin() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    return _PageList(
       children: [
         ElevatedButton(
           onPressed: () => editMenu(),
           child: const Text('Tambah menu'),
         ),
+        const SizedBox(height: 16),
         for (final m in daftarMenu)
           TemaTerang( // BARU: kotak biru tetap tema terang
             child: Card(
               color: biruMuda,
               elevation: 0,
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: Column(
                 children: [
                   ListTile(
@@ -166,9 +168,9 @@ class _FormMenuState extends State<FormMenu> {
         title: Text(widget.menu == null ? 'Tambah menu' : 'Edit menu dan stok'),
         actions: const [SwitchModeGelap()], // BARU: switch mode gelap
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: _PageList(
         children: [
+          const SizedBox(height: 12),
           TextFormField(
             initialValue: nama,
             decoration: const InputDecoration(labelText: 'Nama menu'),
@@ -178,12 +180,14 @@ class _FormMenuState extends State<FormMenu> {
             onPressed: mencari ? null : cariDariApi,
             child: Text(mencari ? 'Mencari...' : 'Cari dari API'),
           ),
+          const SizedBox(height: 12),
           TextFormField(
             key: ValueKey('deskripsi$versiForm'),
             initialValue: deskripsi,
             decoration: const InputDecoration(labelText: 'Deskripsi'),
             onChanged: (s) => deskripsi = s,
           ),
+          const SizedBox(height: 12),
           TextFormField(
             key: ValueKey('foto$versiForm'),
             initialValue: foto,
@@ -202,12 +206,14 @@ class _FormMenuState extends State<FormMenu> {
             ],
             onChanged: (s) => setState(() => jenis = s),
           ),
+          const SizedBox(height: 12),
           TextFormField(
             initialValue: harga,
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(labelText: 'Harga (Rp)'),
             onChanged: (s) => harga = s,
           ),
+          const SizedBox(height: 12),
           TextFormField(
             initialValue: jumlah,
             keyboardType: TextInputType.number,

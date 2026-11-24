@@ -284,8 +284,37 @@ void pesan(BuildContext context, String teks) {
 }
 
 // Tema terang dipisah supaya bisa dipakai ulang oleh kotak biru
+class _PageList extends StatelessWidget {
+  const _PageList({required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
+            children: children,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+const _heading = TextStyle(fontSize: 22, fontWeight: FontWeight.bold);
+const _title = TextStyle(fontSize: 17, fontWeight: FontWeight.w600);
+
+final _inputTheme = InputDecorationTheme(
+  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+);
+
 final ThemeData temaTerang = ThemeData(
   useMaterial3: false,
+  inputDecorationTheme: _inputTheme,
   scaffoldBackgroundColor: Colors.white,
   textSelectionTheme: const TextSelectionThemeData(
     cursorColor: Colors.black,
@@ -309,6 +338,8 @@ final ThemeData temaTerang = ThemeData(
   ),
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
+      minimumSize: const Size(0, 48),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 0,
       backgroundColor: biru,
       foregroundColor: Colors.black,
@@ -356,6 +387,7 @@ class MyApp extends StatelessWidget {
           theme: temaTerang,
           darkTheme: ThemeData(
             useMaterial3: false,
+            inputDecorationTheme: _inputTheme,
             brightness: Brightness.dark,
             scaffoldBackgroundColor: const Color(0xFF121212),
             colorScheme: const ColorScheme.dark(
@@ -374,6 +406,8 @@ class MyApp extends StatelessWidget {
             ),
             elevatedButtonTheme: ElevatedButtonThemeData(
               style: ElevatedButton.styleFrom(
+                minimumSize: const Size(0, 48),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 elevation: 0,
                 backgroundColor: biru,
                 foregroundColor: Colors.black,
@@ -426,25 +460,44 @@ class SwitchModeGelap extends StatelessWidget {
   }
 }
 
-Widget fotoMenu(Map menu, {double ukuran = 64}) {
-  final url = menu['imageUrl']?.toString() ?? '';
+// DIUBAH: URL foto bawaan menu awal (dipakai jika imageUrl tersimpan kosong)
+const _fotoAwal = {
+  'nasi': 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=640',
+  'mie': 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=640',
+  'sate': 'https://images.unsplash.com/photo-1529042410759-befb1204b468?w=640',
+  'ayam': 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=640',
+  'bakso': 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=640',
+  'kwetiau': 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=640',
+  'tahu': 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=640',
+  'dimsum': 'https://images.unsplash.com/photo-1563245372-f21724e3856d?w=640',
+  'kentang': 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=640',
+  'teh': 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=640',
+  'jeruk': 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=640',
+  'puding': 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=640',
+};
+
+// DIUBAH: foto dimuat dari URL (Image.network), tidak lagi dari folder assets
+Widget fotoMenu(Map menu, {double ukuran = 64, double? lebar}) {
+  final id = menu['id'];
+  final simpan = menu['imageUrl']?.toString().trim() ?? '';
+  // Pakai URL tersimpan; kalau kosong, pakai URL bawaan menu awal
+  final url = simpan.isNotEmpty ? simpan : (_fotoAwal[id] ?? '');
+  // Ikon cadangan jika tidak ada foto atau gagal dimuat
+  final ikon = Container(
+    color: biru,
+    child: const Icon(Icons.restaurant, size: 32),
+  );
   return ClipRRect(
     borderRadius: BorderRadius.circular(10),
     child: SizedBox(
-      width: ukuran,
+      width: lebar ?? ukuran,
       height: ukuran,
       child: url.isEmpty
-          ? Container(
-        color: biru,
-        child: const Icon(Icons.restaurant, size: 32),
-      )
+          ? ikon
           : Image.network(
         url,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
-          color: biru,
-          child: const Icon(Icons.restaurant, size: 32),
-        ),
+        errorBuilder: (_, __, ___) => ikon,
       ),
     ),
   );
@@ -467,8 +520,7 @@ Widget daftarPesanan({
   bool transaksi = false,
 }) {
   if (orders.isEmpty) return const Center(child: Text('Belum ada pesanan.'));
-  return ListView(
-    padding: const EdgeInsets.all(16),
+  return _PageList(
     children: [
       for (final o in orders.values.toList().reversed)
         TemaTerang(

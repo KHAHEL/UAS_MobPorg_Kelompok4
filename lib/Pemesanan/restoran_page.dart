@@ -24,8 +24,7 @@ class _RestoranPageState extends State<RestoranPage> {
           ),
     )
         .toList();
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    return _PageList(
       children: [
         TextFormField(
           initialValue: cari,
@@ -35,38 +34,65 @@ class _RestoranPageState extends State<RestoranPage> {
           ),
           onChanged: (s) => setState(() => cari = s),
         ),
-        DropdownButton<String>(
-          isExpanded: true,
-          value: filter,
-          items: [
-            for (final k in ['Semua', ...kategori])
-              DropdownMenuItem(value: k, child: Text(k)),
-          ],
-          onChanged: (s) => setState(() => filter = s!),
+        const SizedBox(height: 12),
+        InputDecorator(
+          decoration: const InputDecoration(labelText: 'Kategori'),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              isExpanded: true,
+              isDense: true,
+              value: filter,
+              items: [
+                for (final k in ['Semua', ...kategori])
+                  DropdownMenuItem(value: k, child: Text(k)),
+              ],
+              onChanged: (s) => setState(() => filter = s!),
+            ),
+          ),
         ),
-        if (hasil.isEmpty) const Text('Menu tidak ditemukan.'),
+        const SizedBox(height: 20),
+        if (hasil.isEmpty) const Center(child: Text('Menu tidak ditemukan.')),
         for (final m in hasil)
-          TemaTerang( // BARU: kotak biru tetap tema terang
-            child: Card(
-              elevation: 0,
-              color: biruMuda,
-              child: ListTile(
-                leading: fotoMenu(m),
-                title: Text(m['name']),
-                subtitle: Text(
-                  "${formatRupiah(m['price'])} · ${m['category']}\nStok ${stok(m)}",
-                ),
-                isThreeLine: true,
-                onTap: () => buka(DetailMenu(m)),
-                trailing: TextButton(
-                  onPressed: stok(m) > dalamCart(m['id'])
-                      ? () => buka(DetailMenu(m))
-                      : null,
-                  child: Text(stok(m) == 0 ? 'Habis' : 'Tambah'),
+          TemaTerang(child: Card(
+            color: biruMuda,
+            elevation: 0,
+            margin: const EdgeInsets.only(bottom: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => buka(DetailMenu(m)),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    fotoMenu(m, ukuran: 82),
+                    const SizedBox(width: 14),
+                    Expanded(child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(m['category']),
+                        Text(m['name'], style: _title),
+                        const SizedBox(height: 6),
+                        Text(formatRupiah(m['price']), style: _title),
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          children: [
+                            Text('Stok ${stok(m)}'),
+                            TextButton(
+                              onPressed: stok(m) > dalamCart(m['id'])
+                                  ? () => buka(DetailMenu(m)) : null,
+                              child: Text(stok(m) == 0 ? 'Habis' : 'Tambah'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    )),
+                  ],
                 ),
               ),
             ),
-          ),
+          )),
       ],
     );
   }
@@ -76,37 +102,59 @@ class _RestoranPageState extends State<RestoranPage> {
     const judul = ['BlueBite', 'Menu', 'Riwayat', 'Info'];
     Widget isi;
     if (tab == 0) {
-      isi = ListView(
-        padding: const EdgeInsets.all(16),
+      final favorit = menus.get('nasi');
+      isi = _PageList(
         children: [
-          TemaTerang( // BARU: kotak biru tetap tema terang
-            child: Material( // DIUBAH: Container menjadi Material
+          const Text('Selamat datang di BlueBite', style: _heading),
+          const SizedBox(height: 6),
+          const Text('Restoran masakan rumahan'),
+          const SizedBox(height: 20),
+          if (favorit is Map) ...[
+            TemaTerang(child: Card(
               color: biruMuda,
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              margin: EdgeInsets.zero,
+              elevation: 0,
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              child: InkWell(
+                onTap: () => buka(DetailMenu(favorit)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Icon(Icons.restaurant, size: 36),
-                    SizedBox(height: 10),
-                    Text(
-                      'Selamat datang di BlueBite',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
+                    fotoMenu(favorit, ukuran: 152, lebar: double.infinity),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Favorit dapur kami'),
+                          const SizedBox(height: 4),
+                          Text(favorit['name'], style: _heading),
+                          const SizedBox(height: 6),
+                          Text(formatRupiah(favorit['price']), style: _title),
+                        ],
                       ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Favorit dapur kami: Nasi Goreng spesial dengan telur.',
                     ),
                   ],
                 ),
               ),
-            ),
+            )),
+            const SizedBox(height: 16),
+          ],
+          ElevatedButton.icon(
+            onPressed: () => setState(() => tab = 1),
+            icon: const Icon(Icons.restaurant_menu),
+            label: const Text('Lihat menu'),
           ),
-          const Text(
-            'BlueBite • Restoran masakan rumahan\nBuka setiap hari, 10.00–21.00 WIB.',
+          TextButton(
+            onPressed: () => buka(const CartPage()),
+            child: const Text('Lihat keranjang'),
+          ),
+          const ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.schedule),
+            title: Text('Buka setiap hari'),
+            subtitle: Text('10.00–21.00 WIB'),
           ),
         ],
       );
@@ -115,13 +163,22 @@ class _RestoranPageState extends State<RestoranPage> {
     } else if (tab == 2) {
       isi = daftarPesanan();
     } else {
-      isi = ListView(
-        padding: const EdgeInsets.all(16),
+      isi = _PageList(
         children: [
-          const Text('BlueBite', style: TextStyle(fontSize: 22)),
-          const Text(
-            'Masakan rumahan, camilan, minuman, dan dessert.\nSetiap hari • 10.00–21.00 WIB\nPembayaran di aplikasi ini berupa simulasi.',
+          const Text('BlueBite', style: _heading),
+          const SizedBox(height: 6),
+          const Text('Masakan rumahan, camilan, minuman, dan dessert.'),
+          const SizedBox(height: 16),
+          const ListTile(
+            leading: Icon(Icons.schedule),
+            title: Text('Jam buka'),
+            subtitle: Text('Setiap hari • 10.00–21.00 WIB'),
           ),
+          const ListTile(
+            leading: Icon(Icons.payment),
+            title: Text('Pembayaran'),
+          ),
+          const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () => buka(const AdminPage()),
             child: const Text('Login admin'),
