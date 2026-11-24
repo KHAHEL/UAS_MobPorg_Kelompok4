@@ -258,7 +258,7 @@ String? cekKeranjang() {
   return null;
 }
 
-Future<void> simpanPesanan(String metode) async {
+Future<void> simpanPesanan(String metode, {String? jadwal}) async {
   final masalah = cekKeranjang();
   if (masalah != null) throw StateError(masalah);
   final waktu = DateTime.now();
@@ -272,6 +272,7 @@ Future<void> simpanPesanan(String metode) async {
     'paymentMethod': metode,
     'paymentStatus': 'Lunas',
     'orderStatus': 'Processing',
+    'pickupTime': jadwal ?? '',
   });
   cart.clear();
 }
@@ -413,7 +414,6 @@ class SwitchModeGelap extends StatelessWidget {
             Icon(gelap ? Icons.dark_mode : Icons.light_mode, size: 20),
             Switch(
               value: gelap,
-              activeColor: Colors.white,
               activeTrackColor: Colors.black54,
               inactiveThumbColor: Colors.white,
               inactiveTrackColor: Colors.black26,
@@ -471,7 +471,7 @@ Widget daftarPesanan({
     padding: const EdgeInsets.all(16),
     children: [
       for (final o in orders.values.toList().reversed)
-        TemaTerang( // BARU: kotak biru tetap tema terang
+        TemaTerang(
           child: Card(
             color: biruMuda,
             elevation: 0,
@@ -486,6 +486,8 @@ Widget daftarPesanan({
               children: [
                 for (final item in o['items']) barisItem(item),
                 Text("${o['paymentMethod']} · ${o['paymentStatus']}"),
+                if ((o['pickupTime'] ?? '') != '')
+                  Text('Pengambilan: ${o['pickupTime']}'),
                 if (ubahStatus != null &&
                     !transaksi &&
                     ['Processing', 'Ready'].contains(o['orderStatus']))
