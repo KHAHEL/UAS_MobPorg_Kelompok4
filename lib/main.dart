@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-part 'admin_page.dart';
+part 'Admin/admin_page.dart';
+part 'Admin/admin_dashboard.dart';
+part 'Admin/admin_menu.dart';
+part 'Admin/admin_pesanan.dart';
+part 'Pemesanan/restoran_page.dart';
+part 'Pemesanan/menu_page.dart';
+part 'Pemesanan/keranjang_page.dart';
+part 'Pemesanan/payment_page.dart';
 
 const biru = Color(0xFF81D4FA);
 const biruMuda = Color(0xFFE1F5FE);
@@ -211,7 +218,7 @@ int dalamCart(String id) {
 
 int get totalPrice => cart.fold(
   0,
-  (sum, p) => sum + (p['quantity'] as int) * (p['price'] as int),
+      (sum, p) => sum + (p['quantity'] as int) * (p['price'] as int),
 );
 
 void tambahKeranjang(Map menu, String level, int jumlah) {
@@ -334,324 +341,19 @@ Widget fotoMenu(Map menu, {double ukuran = 64}) {
       height: ukuran,
       child: url.isEmpty
           ? Container(
-              color: biru,
-              child: const Icon(Icons.restaurant, size: 32),
-            )
+        color: biru,
+        child: const Icon(Icons.restaurant, size: 32),
+      )
           : Image.network(
-              url,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: biru,
-                child: const Icon(Icons.restaurant, size: 32),
-              ),
-            ),
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          color: biru,
+          child: const Icon(Icons.restaurant, size: 32),
+        ),
+      ),
     ),
   );
-}
-
-class RestoranPage extends StatefulWidget {
-  const RestoranPage({super.key});
-  @override
-  State<RestoranPage> createState() => _RestoranPageState();
-}
-
-class _RestoranPageState extends State<RestoranPage> {
-  int tab = 0;
-  String cari = '', filter = 'Semua';
-  Future<void> buka(Widget halaman) async {
-    await Navigator.push(context, MaterialPageRoute(builder: (_) => halaman));
-    if (mounted) setState(() {});
-  }
-
-  Widget halamanMenu() {
-    final hasil = daftarMenu
-        .where(
-          (m) =>
-              (filter == 'Semua' || filter == m['category']) &&
-              m['name'].toString().toLowerCase().contains(
-                cari.trim().toLowerCase(),
-              ),
-        )
-        .toList();
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        TextFormField(
-          initialValue: cari,
-          decoration: const InputDecoration(
-            labelText: 'Cari makanan atau minuman',
-            prefixIcon: Icon(Icons.search),
-          ),
-          onChanged: (s) => setState(() => cari = s),
-        ),
-        DropdownButton<String>(
-          isExpanded: true,
-          value: filter,
-          items: [
-            for (final k in ['Semua', ...kategori])
-              DropdownMenuItem(value: k, child: Text(k)),
-          ],
-          onChanged: (s) => setState(() => filter = s!),
-        ),
-        if (hasil.isEmpty) const Text('Menu tidak ditemukan.'),
-        for (final m in hasil)
-          Card(
-            elevation: 0,
-            color: biruMuda,
-            child: ListTile(
-              leading: fotoMenu(m),
-              title: Text(m['name']),
-              subtitle: Text(
-                "${formatRupiah(m['price'])} · ${m['category']}\nStok ${stok(m)}",
-              ),
-              isThreeLine: true,
-              onTap: () => buka(DetailMenu(m)),
-              trailing: TextButton(
-                onPressed: stok(m) > dalamCart(m['id'])
-                    ? () => buka(DetailMenu(m))
-                    : null,
-                child: Text(stok(m) == 0 ? 'Habis' : 'Tambah'),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    const judul = ['BlueBite', 'Menu', 'Riwayat', 'Info'];
-    Widget isi;
-    if (tab == 0) {
-      isi = ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Container(
-            color: biruMuda,
-            padding: const EdgeInsets.all(20),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.restaurant, size: 36),
-                SizedBox(height: 10),
-                Text(
-                  'Selamat datang di BlueBite',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 8),
-                Text('Favorit dapur kami: Nasi Goreng spesial dengan telur.'),
-              ],
-            ),
-          ),
-          const Text(
-            'BlueBite • Restoran masakan rumahan\nBuka setiap hari, 10.00–21.00 WIB.',
-          ),
-        ],
-      );
-    } else if (tab == 1) {
-      isi = halamanMenu();
-    } else if (tab == 2) {
-      isi = daftarPesanan();
-    } else {
-      isi = ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const Text('BlueBite', style: TextStyle(fontSize: 22)),
-          const Text(
-            'Masakan rumahan, camilan, minuman, dan dessert.\nSetiap hari • 10.00–21.00 WIB\nPembayaran di aplikasi ini berupa simulasi.',
-          ),
-          ElevatedButton(
-            onPressed: () => buka(const AdminPage()),
-            child: const Text('Login admin'),
-          ),
-        ],
-      );
-    }
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(judul[tab]),
-        actions: [
-          IconButton(
-            tooltip: 'Keranjang',
-            onPressed: () => buka(const CartPage()),
-            icon: const Icon(Icons.shopping_cart_outlined),
-          ),
-        ],
-      ),
-      body: SafeArea(child: isi),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: tab,
-        onTap: (i) => setState(() => tab = i),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.restaurant_menu),
-            label: 'Menu',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long),
-            label: 'Riwayat',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.info_outline),
-            label: 'Info',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class DetailMenu extends StatefulWidget {
-  final Map menu;
-  const DetailMenu(this.menu, {super.key});
-  @override
-  State<DetailMenu> createState() => _DetailMenuState();
-}
-
-class _DetailMenuState extends State<DetailMenu> {
-  int jumlah = 1;
-  String level = 'Sedang';
-  @override
-  Widget build(BuildContext context) {
-    final m = widget.menu;
-    final sisa = stok(m) - dalamCart(m['id']);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Detail menu')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text(
-            m['name'],
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          Text(m['description']),
-          Text(
-            "${m['category']} · ${formatRupiah(m['price'])} · Stok ${stok(m)}",
-          ),
-          if (m['spicy'])
-            DropdownButton<String>(
-              isExpanded: true,
-              value: level,
-              items: [
-                for (final l in levelPedas)
-                  DropdownMenuItem(value: l, child: Text(l)),
-              ],
-              onChanged: (s) => setState(() => level = s!),
-            ),
-          Row(
-            children: [
-              const Text('Jumlah'),
-              IconButton(
-                tooltip: 'Kurangi',
-                onPressed: jumlah > 1 ? () => setState(() => jumlah--) : null,
-                icon: const Icon(Icons.remove),
-              ),
-              Text('$jumlah'),
-              IconButton(
-                tooltip: 'Tambah jumlah',
-                onPressed: jumlah < sisa
-                    ? () => setState(() => jumlah++)
-                    : null,
-                icon: const Icon(Icons.add),
-              ),
-            ],
-          ),
-          ElevatedButton(
-            onPressed: sisa < jumlah
-                ? null
-                : () {
-                    tambahKeranjang(m, m['spicy'] ? level : '', jumlah);
-                    pesan(context, "${m['name']} masuk keranjang");
-                    Navigator.pop(context);
-                  },
-            child: const Text('Masukkan ke keranjang'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class CartPage extends StatefulWidget {
-  const CartPage({super.key});
-  @override
-  State<CartPage> createState() => _CartPageState();
-}
-
-class _CartPageState extends State<CartPage> {
-  void ubahJumlah(Map item, int delta) {
-    setState(() {
-      item['quantity'] += delta;
-      if (item['quantity'] <= 0) cart.remove(item);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final masalah = cekKeranjang();
-    return Scaffold(
-      appBar: AppBar(title: const Text('Keranjang')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          for (final item in cart)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                barisItem(item),
-                Row(
-                  children: [
-                    IconButton(
-                      tooltip: 'Kurangi',
-                      icon: const Icon(Icons.remove),
-                      onPressed: () => ubahJumlah(item, -1),
-                    ),
-                    Text("${item['quantity']}"),
-                    IconButton(
-                      tooltip: 'Tambah jumlah',
-                      icon: const Icon(Icons.add),
-                      onPressed:
-                          menus.containsKey(item['id']) &&
-                              dalamCart(item['id']) <
-                                  stok(menus.get(item['id']))
-                          ? () => ubahJumlah(item, 1)
-                          : null,
-                    ),
-                    IconButton(
-                      tooltip: 'Hapus item',
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: () => setState(() => cart.remove(item)),
-                    ),
-                  ],
-                ),
-                const Divider(),
-              ],
-            ),
-          if (masalah != null) Text(masalah),
-          Text(
-            'Total ${formatRupiah(totalPrice)}',
-            style: const TextStyle(fontSize: 20),
-          ),
-          ElevatedButton(
-            onPressed: masalah != null
-                ? null
-                : () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const PaymentPage()),
-                    );
-                    if (mounted) setState(() {});
-                  },
-            child: const Text('Checkout'),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 Widget barisItem(Map item) {
@@ -664,73 +366,6 @@ Widget barisItem(Map item) {
       "${formatRupiah(item['price'])} × ${item['quantity']} = ${formatRupiah(item['quantity'] * item['price'])}",
     ),
   );
-}
-
-class PaymentPage extends StatefulWidget {
-  const PaymentPage({super.key});
-  @override
-  State<PaymentPage> createState() => _PaymentPageState();
-}
-
-class _PaymentPageState extends State<PaymentPage> {
-  String selectedMethod = 'QRIS';
-  bool sibuk = false;
-  Future<void> bayar() async {
-    if (sibuk) return;
-    setState(() => sibuk = true);
-    try {
-      await simpanPesanan(selectedMethod);
-    } catch (e) {
-      if (mounted) {
-        setState(() => sibuk = false);
-        pesan(
-          context,
-          e is StateError ? e.message : 'Pesanan gagal disimpan. Coba lagi.',
-        );
-      }
-      return;
-    }
-    if (!mounted) return;
-    pesan(context, 'Pesanan berhasil disimpan. Terima kasih!');
-    Navigator.popUntil(context, (route) => route.isFirst);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return PopScope(
-      canPop: !sibuk,
-      child: Scaffold(
-        appBar: AppBar(title: const Text('Checkout')),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            for (final item in cart) barisItem(item),
-            Text(
-              'Total ${formatRupiah(totalPrice)}',
-              style: const TextStyle(fontSize: 20),
-            ),
-            const SizedBox(height: 16),
-            const Text('Metode pembayaran (simulasi)'),
-            DropdownButton<String>(
-              value: selectedMethod,
-              isExpanded: true,
-              items: [
-                for (final m in metodeBayar)
-                  DropdownMenuItem(value: m, child: Text(m)),
-              ],
-              onChanged: sibuk
-                  ? null
-                  : (s) => setState(() => selectedMethod = s!),
-            ),
-            ElevatedButton(
-              onPressed: sibuk ? null : bayar,
-              child: const Text('Konfirmasi pesanan'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 Widget daftarPesanan({
