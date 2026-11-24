@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:http/http.dart' as http;
 
 part 'Admin/admin_page.dart';
 part 'Admin/admin_dashboard.dart';
@@ -11,6 +13,7 @@ part 'Pemesanan/keranjang_page.dart';
 part 'Pemesanan/payment_page.dart';
 
 const biru = Color(0xFF81D4FA);
+final ValueNotifier<bool> modeGelap = ValueNotifier(false);
 const biruMuda = Color(0xFFE1F5FE);
 const kategori = ['Main Course', 'Snacks', 'Drinks', 'Dessert'];
 const levelPedas = ['Tidak Pedas', 'Sedang', 'Pedas'];
@@ -30,8 +33,8 @@ Future<void> bukaDatabase() async {
   menus = await Hive.openBox('menus');
   orders = await Hive.openBox('orders');
 
-  // Data contoh dan alamat foto hanya ditambahkan satu kali.
-  // Kalau admin menghapus menu, aplikasi tidak akan memunculkannya lagi sendiri.
+  // Data contoh
+  // Kalau admin menghapus menu, aplikasi tidak akan memunculkannya lagi
   if (!menus.containsKey('_versiMenu')) {
     final awal = [
       [
@@ -267,7 +270,7 @@ Future<void> simpanPesanan(String metode) async {
     'items': [for (final item in cart) Map.of(item)],
     'totalPrice': totalPrice,
     'paymentMethod': metode,
-    'paymentStatus': 'Lunas (simulasi)',
+    'paymentStatus': 'Lunas',
     'orderStatus': 'Processing',
   });
   cart.clear();
@@ -279,55 +282,146 @@ void pesan(BuildContext context, String teks) {
     ..showSnackBar(SnackBar(content: Text(teks)));
 }
 
+// Tema terang dipisah supaya bisa dipakai ulang oleh kotak biru
+final ThemeData temaTerang = ThemeData(
+  useMaterial3: false,
+  scaffoldBackgroundColor: Colors.white,
+  textSelectionTheme: const TextSelectionThemeData(
+    cursorColor: Colors.black,
+    selectionColor: biru,
+    selectionHandleColor: biru,
+  ),
+  colorScheme: const ColorScheme.light(
+    primary: biru,
+    secondary: biru,
+    onPrimary: Colors.black,
+    onSecondary: Colors.black,
+    error: Colors.black,
+  ),
+  appBarTheme: const AppBarTheme(
+    backgroundColor: biru,
+    foregroundColor: Colors.black,
+    elevation: 0,
+  ),
+  textButtonTheme: TextButtonThemeData(
+    style: TextButton.styleFrom(foregroundColor: Colors.black),
+  ),
+  elevatedButtonTheme: ElevatedButtonThemeData(
+    style: ElevatedButton.styleFrom(
+      elevation: 0,
+      backgroundColor: biru,
+      foregroundColor: Colors.black,
+    ),
+  ),
+  snackBarTheme: const SnackBarThemeData(
+    backgroundColor: biruMuda,
+    contentTextStyle: TextStyle(color: Colors.black),
+  ),
+  bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+    selectedItemColor: Colors.black,
+    unselectedItemColor: Colors.black54,
+    backgroundColor: biruMuda,
+    type: BottomNavigationBarType.fixed,
+  ),
+);
+
+// Pembungkus yang memaksa isinya memakai tema terang (untuk kotak biru)
+class TemaTerang extends StatelessWidget {
+  final Widget child;
+  const TemaTerang({super.key, required this.child});
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: temaTerang,
+      child: DefaultTextStyle(
+        style: const TextStyle(color: Colors.black87, fontSize: 14),
+        child: child,
+      ),
+    );
+  }
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'BlueBite',
-      theme: ThemeData(
-        useMaterial3: false,
-        scaffoldBackgroundColor: Colors.white,
-        textSelectionTheme: const TextSelectionThemeData(
-          cursorColor: Colors.black,
-          selectionColor: biru,
-          selectionHandleColor: biru,
-        ),
-        colorScheme: const ColorScheme.light(
-          primary: biru,
-          secondary: biru,
-          onPrimary: Colors.black,
-          onSecondary: Colors.black,
-          error: Colors.black,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: biru,
-          foregroundColor: Colors.black,
-          elevation: 0,
-        ),
-        textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(foregroundColor: Colors.black),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            elevation: 0,
-            backgroundColor: biru,
-            foregroundColor: Colors.black,
+    return ValueListenableBuilder<bool>(
+      valueListenable: modeGelap,
+      builder: (context, gelap, _) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'BlueBite',
+          themeMode: gelap ? ThemeMode.dark : ThemeMode.light,
+          theme: temaTerang,
+          darkTheme: ThemeData(
+            useMaterial3: false,
+            brightness: Brightness.dark,
+            scaffoldBackgroundColor: const Color(0xFF121212),
+            colorScheme: const ColorScheme.dark(
+              primary: biru,
+              secondary: biru,
+              onPrimary: Colors.black,
+              onSecondary: Colors.black,
+            ),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: biru,
+              foregroundColor: Colors.black,
+              elevation: 0,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(foregroundColor: biru),
+            ),
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(
+                elevation: 0,
+                backgroundColor: biru,
+                foregroundColor: Colors.black,
+              ),
+            ),
+            // Snackbar dan footer sama persis dengan mode terang
+            snackBarTheme: const SnackBarThemeData(
+              backgroundColor: biruMuda,
+              contentTextStyle: TextStyle(color: Colors.black),
+            ),
+            bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+              selectedItemColor: Colors.black,
+              unselectedItemColor: Colors.black54,
+              backgroundColor: biruMuda,
+              type: BottomNavigationBarType.fixed,
+            ),
           ),
-        ),
-        snackBarTheme: const SnackBarThemeData(
-          backgroundColor: biruMuda,
-          contentTextStyle: TextStyle(color: Colors.black),
-        ),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          selectedItemColor: Colors.black,
-          unselectedItemColor: Colors.black54,
-          backgroundColor: biruMuda,
-          type: BottomNavigationBarType.fixed,
-        ),
-      ),
-      home: const RestoranPage(),
+          home: const RestoranPage(),
+        );
+      },
+    );
+  }
+}
+
+// Switch mode gelap yang bisa dipasang di AppBar halaman mana pun
+class SwitchModeGelap extends StatelessWidget {
+  const SwitchModeGelap({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // ValueListenableBuilder membuat switch memperbarui dirinya sendiri
+    return ValueListenableBuilder<bool>(
+      valueListenable: modeGelap,
+      builder: (context, gelap, _) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(gelap ? Icons.dark_mode : Icons.light_mode, size: 20),
+            Switch(
+              value: gelap,
+              activeColor: Colors.white,
+              activeTrackColor: Colors.black54,
+              inactiveThumbColor: Colors.white,
+              inactiveTrackColor: Colors.black26,
+              onChanged: (v) => modeGelap.value = v,
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -377,45 +471,47 @@ Widget daftarPesanan({
     padding: const EdgeInsets.all(16),
     children: [
       for (final o in orders.values.toList().reversed)
-        Card(
-          color: biruMuda,
-          elevation: 0,
-          child: ExpansionTile(
-            textColor: Colors.black,
-            iconColor: Colors.black,
-            title: Text(o['orderId']),
-            subtitle: Text(
-              "${o['orderDate'].toString().substring(0, 16).replaceFirst('T', ' ')}\n${formatRupiah(o['totalPrice'])} · ${o['orderStatus']}",
+        TemaTerang( // BARU: kotak biru tetap tema terang
+          child: Card(
+            color: biruMuda,
+            elevation: 0,
+            child: ExpansionTile(
+              textColor: Colors.black,
+              iconColor: Colors.black,
+              title: Text(o['orderId']),
+              subtitle: Text(
+                "${o['orderDate'].toString().substring(0, 16).replaceFirst('T', ' ')}\n${formatRupiah(o['totalPrice'])} · ${o['orderStatus']}",
+              ),
+              childrenPadding: const EdgeInsets.all(12),
+              children: [
+                for (final item in o['items']) barisItem(item),
+                Text("${o['paymentMethod']} · ${o['paymentStatus']}"),
+                if (ubahStatus != null &&
+                    !transaksi &&
+                    ['Processing', 'Ready'].contains(o['orderStatus']))
+                  Wrap(
+                    children: [
+                      TextButton(
+                        onPressed: () => ubahStatus(
+                          o,
+                          o['orderStatus'] == 'Processing'
+                              ? 'Ready'
+                              : 'Completed',
+                        ),
+                        child: Text(
+                          o['orderStatus'] == 'Processing'
+                              ? 'Tandai Ready'
+                              : 'Selesaikan',
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => ubahStatus(o, 'Cancelled'),
+                        child: const Text('Batalkan pesanan'),
+                      ),
+                    ],
+                  ),
+              ],
             ),
-            childrenPadding: const EdgeInsets.all(12),
-            children: [
-              for (final item in o['items']) barisItem(item),
-              Text("${o['paymentMethod']} · ${o['paymentStatus']}"),
-              if (ubahStatus != null &&
-                  !transaksi &&
-                  ['Processing', 'Ready'].contains(o['orderStatus']))
-                Wrap(
-                  children: [
-                    TextButton(
-                      onPressed: () => ubahStatus(
-                        o,
-                        o['orderStatus'] == 'Processing'
-                            ? 'Ready'
-                            : 'Completed',
-                      ),
-                      child: Text(
-                        o['orderStatus'] == 'Processing'
-                            ? 'Tandai Ready'
-                            : 'Selesaikan',
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => ubahStatus(o, 'Cancelled'),
-                      child: const Text('Batalkan pesanan'),
-                    ),
-                  ],
-                ),
-            ],
           ),
         ),
     ],

@@ -16,6 +16,28 @@ class _CartPageState extends State<CartPage> {
     });
   }
 
+  // Pop-up konfirmasi sebelum item dihapus dari keranjang
+  Future<void> konfirmasiHapus(Map item) async {
+    final ya = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus pesanan?'),
+        content: Text("${item['name']} akan dihapus dari keranjang."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+    if (ya == true && mounted) setState(() => cart.remove(item));
+  }
+
   Widget tombol(IconData icon, VoidCallback? onTap) {
     return InkWell(
       borderRadius: BorderRadius.circular(8),
@@ -39,62 +61,61 @@ class _CartPageState extends State<CartPage> {
   Widget kartuItem(Map item) {
     final menu = menus.get(item['id']);
     final bisaTambah = menu != null && dalamCart(item['id']) < stok(menu);
-    return Card(
-      color: Colors.white,
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            fotoMenu(menu is Map ? menu : {}, ukuran: 76),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item['name'],
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  if (item['level'] != '')
+    // Card dibungkus GestureDetector agar bisa di-hold (long press)
+    return GestureDetector(
+      onLongPress: () => konfirmasiHapus(item),
+      child: Card(
+        color: Theme.of(context).cardColor, // DIUBAH: ikut mode terang/gelap
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              fotoMenu(menu is Map ? menu : {}, ukuran: 76),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      'Pedas: ${item['level']}',
+                      item['name'],
                       style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.black54,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  const SizedBox(height: 4),
-                  Text(
-                    formatRupiah(item['price']),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: warnaBiru,
+                    if (item['level'] != '')
+                      Text(
+                        'Pedas: ${item['level']}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    const SizedBox(height: 4),
+                    Text(
+                      formatRupiah(item['price']),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: warnaBiru,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            tombol(Icons.remove, () => ubahJumlah(item, -1)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Text(
-                "${item['quantity']}",
-                style: const TextStyle(fontSize: 15),
+              tombol(Icons.remove, () => ubahJumlah(item, -1)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Text(
+                  "${item['quantity']}",
+                  style: const TextStyle(fontSize: 15),
+                ),
               ),
-            ),
-            tombol(Icons.add, bisaTambah ? () => ubahJumlah(item, 1) : null),
-            IconButton(
-              tooltip: 'Hapus item',
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () => setState(() => cart.remove(item)),
-            ),
-          ],
+              tombol(Icons.add, bisaTambah ? () => ubahJumlah(item, 1) : null),
+            ],
+          ),
         ),
       ),
     );
@@ -104,8 +125,11 @@ class _CartPageState extends State<CartPage> {
   Widget build(BuildContext context) {
     final masalah = cekKeranjang();
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(title: const Text('Keranjang')),
+      // DIUBAH: backgroundColor dihapus, warna latar sekarang ikut tema
+      appBar: AppBar(
+        title: const Text('Keranjang'),
+        actions: const [SwitchModeGelap()],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

@@ -15,7 +15,10 @@ class _DetailMenuState extends State<DetailMenu> {
     final m = widget.menu;
     final sisa = stok(m) - dalamCart(m['id']);
     return Scaffold(
-      appBar: AppBar(title: const Text('Detail menu')),
+      appBar: AppBar(
+          title: const Text('Detail menu'),
+          actions: const [SwitchModeGelap()],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

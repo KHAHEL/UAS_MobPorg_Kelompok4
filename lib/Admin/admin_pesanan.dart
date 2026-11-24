@@ -8,7 +8,7 @@ Future<void> simpanStatus(String id, String baru) async {
           (lama == 'Ready' && ['Completed', 'Cancelled'].contains(baru));
   if (!boleh) return;
   order['orderStatus'] = baru;
-  if (baru == 'Cancelled') order['paymentStatus'] = 'Dibatalkan (simulasi)';
+  if (baru == 'Cancelled') order['paymentStatus'] = 'Dibatalkan';
   // Stok dihitung dari order aktif. Membuka ulang order batal tidak mengubah stok.
   await orders.put(id, order);
 }

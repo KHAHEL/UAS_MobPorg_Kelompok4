@@ -113,6 +113,7 @@ class _AdminPageState extends State<AdminPage> {
       appBar: AppBar(
         title: Text(masuk ? tabs[tab] : 'Login admin'),
         actions: [
+          const SwitchModeGelap(),
           if (masuk)
             IconButton(
               tooltip: 'Keluar admin',

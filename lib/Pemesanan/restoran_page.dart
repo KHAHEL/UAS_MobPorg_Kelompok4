@@ -46,22 +46,24 @@ class _RestoranPageState extends State<RestoranPage> {
         ),
         if (hasil.isEmpty) const Text('Menu tidak ditemukan.'),
         for (final m in hasil)
-          Card(
-            elevation: 0,
-            color: biruMuda,
-            child: ListTile(
-              leading: fotoMenu(m),
-              title: Text(m['name']),
-              subtitle: Text(
-                "${formatRupiah(m['price'])} · ${m['category']}\nStok ${stok(m)}",
-              ),
-              isThreeLine: true,
-              onTap: () => buka(DetailMenu(m)),
-              trailing: TextButton(
-                onPressed: stok(m) > dalamCart(m['id'])
-                    ? () => buka(DetailMenu(m))
-                    : null,
-                child: Text(stok(m) == 0 ? 'Habis' : 'Tambah'),
+          TemaTerang( // BARU: kotak biru tetap tema terang
+            child: Card(
+              elevation: 0,
+              color: biruMuda,
+              child: ListTile(
+                leading: fotoMenu(m),
+                title: Text(m['name']),
+                subtitle: Text(
+                  "${formatRupiah(m['price'])} · ${m['category']}\nStok ${stok(m)}",
+                ),
+                isThreeLine: true,
+                onTap: () => buka(DetailMenu(m)),
+                trailing: TextButton(
+                  onPressed: stok(m) > dalamCart(m['id'])
+                      ? () => buka(DetailMenu(m))
+                      : null,
+                  child: Text(stok(m) == 0 ? 'Habis' : 'Tambah'),
+                ),
               ),
             ),
           ),
@@ -77,21 +79,30 @@ class _RestoranPageState extends State<RestoranPage> {
       isi = ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Container(
-            color: biruMuda,
-            padding: const EdgeInsets.all(20),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.restaurant, size: 36),
-                SizedBox(height: 10),
-                Text(
-                  'Selamat datang di BlueBite',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          TemaTerang( // BARU: kotak biru tetap tema terang
+            child: Material( // DIUBAH: Container menjadi Material
+              color: biruMuda,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.restaurant, size: 36),
+                    SizedBox(height: 10),
+                    Text(
+                      'Selamat datang di BlueBite',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Favorit dapur kami: Nasi Goreng spesial dengan telur.',
+                    ),
+                  ],
                 ),
-                SizedBox(height: 8),
-                Text('Favorit dapur kami: Nasi Goreng spesial dengan telur.'),
-              ],
+              ),
             ),
           ),
           const Text(
@@ -122,10 +133,19 @@ class _RestoranPageState extends State<RestoranPage> {
       appBar: AppBar(
         title: Text(judul[tab]),
         actions: [
+          const SwitchModeGelap(), // BARU: switch mode gelap
           IconButton(
             tooltip: 'Keranjang',
             onPressed: () => buka(const CartPage()),
-            icon: const Icon(Icons.shopping_cart_outlined),
+            // BARU: badge merah berisi total porsi di keranjang
+            icon: Badge(
+              isLabelVisible: cart.isNotEmpty,
+              backgroundColor: Colors.red,
+              label: Text(
+                '${cart.fold<int>(0, (sum, p) => sum + (p['quantity'] as int))}',
+              ),
+              child: const Icon(Icons.shopping_cart_outlined),
+            ),
           ),
         ],
       ),

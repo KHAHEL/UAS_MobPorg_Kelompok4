@@ -34,7 +34,10 @@ class _PaymentPageState extends State<PaymentPage> {
     return PopScope(
       canPop: !sibuk,
       child: Scaffold(
-        appBar: AppBar(title: const Text('Checkout')),
+        appBar: AppBar(
+            title: const Text('Checkout'),
+            actions: const [SwitchModeGelap()],
+        ),
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -44,18 +47,17 @@ class _PaymentPageState extends State<PaymentPage> {
               style: const TextStyle(fontSize: 20),
             ),
             const SizedBox(height: 16),
-            const Text('Metode pembayaran (simulasi)'),
-            DropdownButton<String>(
-              value: selectedMethod,
-              isExpanded: true,
-              items: [
-                for (final m in metodeBayar)
-                  DropdownMenuItem(value: m, child: Text(m)),
-              ],
-              onChanged: sibuk
-                  ? null
-                  : (s) => setState(() => selectedMethod = s!),
-            ),
+            const Text('Metode pembayaran'),
+            for (final m in metodeBayar)
+              RadioListTile<String>(
+                contentPadding: EdgeInsets.zero,
+                title: Text(m),
+                value: m,
+                groupValue: selectedMethod,
+                onChanged: sibuk
+                    ? null
+                    : (s) => setState(() => selectedMethod = s!),
+              ),
             ElevatedButton(
               onPressed: sibuk ? null : bayar,
               child: const Text('Konfirmasi pesanan'),
