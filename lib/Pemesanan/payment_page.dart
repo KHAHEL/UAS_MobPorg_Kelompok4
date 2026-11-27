@@ -10,18 +10,6 @@ class _PaymentPageState extends State<PaymentPage> {
   String selectedMethod = 'QRIS';
   String bank = 'BCA';
   bool sibuk = false;
-  String inputPromo = '';
-  String promoAktif = '';
-  String infoPromo = '';
-  int diskon = 0;
-  void pakaiPromo() {
-    final kode = inputPromo.trim().toUpperCase();
-    setState(() {
-      promoAktif = kode == 'HEMAT5K' ? kode : '';
-      diskon = promoAktif.isEmpty ? 0 : min(5000, totalPrice);
-      infoPromo = promoAktif.isEmpty ? 'Kode promo tidak tersedia.' : 'Promo berhasil dipakai.';
-    });
-  }
 
   bool terjadwal = false;
   DateTime? tanggal; // BARU: tanggal pengambilan hasil Date Picker
@@ -65,8 +53,7 @@ class _PaymentPageState extends State<PaymentPage> {
     }
     setState(() => sibuk = true);
     try {
-      await simpanPesanan(selectedMethod, bank: bank,
-          waktuAmbil: waktuAmbil, kodePromo: promoAktif, diskon: diskon);
+      await simpanPesanan(selectedMethod, bank: bank, waktuAmbil: waktuAmbil);
     } catch (e) {
       if (mounted) {
         setState(() => sibuk = false);
@@ -101,27 +88,6 @@ class _PaymentPageState extends State<PaymentPage> {
                 subtitle: Text("${pelangganAktif!['phone']}\n${pelangganAktif!['address']}")),
             for (final item in cart) barisItem(item),
             const Divider(),
-            const SizedBox(height: 8),
-            const Text('Kode promo', style: _title),
-            const SizedBox(height: 8),
-            Row(children: [
-              Expanded(child: TextField(
-                enabled: !sibuk,
-                decoration: const InputDecoration(hintText: 'Masukkan kode'),
-                onChanged: (nilai) => setState(() {
-                  inputPromo = nilai;
-                  promoAktif = '';
-                  diskon = 0;
-                  infoPromo = '';
-                }),
-              )),
-              const SizedBox(width: 8),
-              OutlinedButton(
-                onPressed: sibuk || inputPromo.trim().isEmpty ? null : pakaiPromo,
-                child: const Text('Pakai'),
-              ),
-            ]),
-            if (infoPromo.isNotEmpty) Text(infoPromo),
             const SizedBox(height: 16),
             const Text('Metode pembayaran (simulasi)', style: _title),
             for (final m in metodeBayar)
@@ -194,9 +160,7 @@ class _PaymentPageState extends State<PaymentPage> {
             const SizedBox(height: 8),
             const _EstimasiPerjalanan(),
             const Divider(),
-            Text('Subtotal: ${formatRupiah(totalPrice)}'),
-            if (promoAktif.isNotEmpty) Text('Diskon promo: −${formatRupiah(diskon)}'),
-            Text('Total bayar: ${formatRupiah(totalPrice - diskon)}', style: _title),
+            Text('Total bayar: ${formatRupiah(totalPrice)}', style: _title),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: sibuk ? null : bayar,
