@@ -10,9 +10,17 @@ extension AdminMenu on _AdminPageState {
   Widget halamanMenuAdmin() {
     return _PageList(
       children: [
-        ElevatedButton(
+        OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.blue.shade800,
+            backgroundColor: biruMuda,
+            side: BorderSide(color: Colors.blue.shade600, width: 1.5),
+            minimumSize: const Size(double.infinity, 50),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
           onPressed: () => editMenu(),
-          child: const Text('Tambah menu'),
+          icon: const Icon(Icons.add_circle_outline),
+          label: const Text('Tambah menu'),
         ),
         const SizedBox(height: 16),
         for (final m in daftarMenu)
@@ -22,28 +30,45 @@ extension AdminMenu on _AdminPageState {
               elevation: 0,
               margin: const EdgeInsets.only(bottom: 12),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: fotoMenu(m, ukuran: 52),
-                    title: Text(m['name']),
-                    subtitle: Text(
-                      "${formatRupiah(m['price'])} · ${m['category']}\nStok ${stok(m)} · ${labelStok(stok(m))}",
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    fotoMenu(m, ukuran: 60),
+                    const SizedBox(height: 8),
+                    Text(m['name'], style: _title),
+                    Text("${formatRupiah(m['price'])} · ${m['category']}"),
+                    Text("Stok ${stok(m)} · ${labelStok(stok(m))}"),
+                  ])),
+                  const SizedBox(width: 8),
+                  Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.blue.shade800,
+                        backgroundColor: Colors.white,
+                        side: BorderSide(color: Colors.blue.shade600, width: 1.5),
+                        minimumSize: const Size(118, 48),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () => editMenu(m),
+                      icon: const Icon(Icons.edit_outlined),
+                      label: const Text('Edit / stok'),
                     ),
-                  ),
-                  Wrap(
-                    children: [
-                      TextButton(
-                        onPressed: () => editMenu(m),
-                        child: const Text('Edit / stok'),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red.shade700,
+                        backgroundColor: Colors.white,
+                        side: BorderSide(color: Colors.red.shade500, width: 1.5),
+                        minimumSize: const Size(118, 48),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      TextButton(
-                        onPressed: () => hapusMenu(m),
-                        child: const Text('Hapus'),
-                      ),
-                    ],
-                  ),
-                ],
+                      onPressed: () => hapusMenu(m),
+                      icon: const Icon(Icons.delete_outline),
+                      label: const Text('Hapus'),
+                    ),
+                  ]),
+                ]),
               ),
             ),
           ),
@@ -64,8 +89,6 @@ class _FormMenuState extends State<FormMenu> {
   String? jenis;
   bool pedas = false, sibuk = false;
   String masalah = '';
-  int versiForm = 0; // dinaikkan agar TextFormField dibangun ulang
-  bool mencari = false; // status loading saat memanggil API
 
   @override
   void initState() {
@@ -78,47 +101,6 @@ class _FormMenuState extends State<FormMenu> {
     jumlah = m == null ? '0' : stok(m).toString();
     jenis = m?['category'];
     pedas = m?['spicy'] ?? false;
-  }
-
-  // Mengambil data makanan dari TheMealDB berdasarkan kata kunci nama
-  Future<void> cariDariApi() async {
-    final kata = nama.trim();
-    if (kata.isEmpty) {
-      setState(() => masalah = 'Isi nama menu dulu sebagai kata kunci.');
-      return;
-    }
-    setState(() {
-      mencari = true;
-      masalah = '';
-    });
-    try {
-      final uri = Uri.parse(
-        'https://www.themealdb.com/api/json/v1/1/search.php?s=${Uri.encodeComponent(kata)}',
-      );
-      final res = await http.get(uri).timeout(const Duration(seconds: 10));
-      if (res.statusCode != 200) throw Exception('Status ${res.statusCode}');
-      final data = jsonDecode(res.body);
-      final hasil = data['meals'];
-      if (hasil == null || hasil.isEmpty) {
-        setState(
-              () => masalah =
-          'Tidak ada hasil. Coba kata kunci bahasa Inggris, misalnya "chicken".',
-        );
-      } else {
-        final m = hasil[0];
-        setState(() {
-          foto = m['strMealThumb'] ?? foto;
-          deskripsi = '${m['strCategory']} - ${m['strArea']}';
-          versiForm++; // paksa field terisi ulang dengan nilai baru
-        });
-      }
-    } catch (_) {
-      setState(
-            () => masalah = 'Gagal mengambil data. Periksa koneksi internet.',
-      );
-    } finally {
-      if (mounted) setState(() => mencari = false);
-    }
   }
 
   Future<void> simpan() async {
@@ -176,20 +158,14 @@ class _FormMenuState extends State<FormMenu> {
             decoration: const InputDecoration(labelText: 'Nama menu'),
             onChanged: (s) => nama = s,
           ),
-          OutlinedButton(
-            onPressed: mencari ? null : cariDariApi,
-            child: Text(mencari ? 'Mencari...' : 'Cari dari API'),
-          ),
           const SizedBox(height: 12),
           TextFormField(
-            key: ValueKey('deskripsi$versiForm'),
             initialValue: deskripsi,
             decoration: const InputDecoration(labelText: 'Deskripsi'),
             onChanged: (s) => deskripsi = s,
           ),
           const SizedBox(height: 12),
           TextFormField(
-            key: ValueKey('foto$versiForm'),
             initialValue: foto,
             decoration: const InputDecoration(
               labelText: 'Link foto (opsional)',

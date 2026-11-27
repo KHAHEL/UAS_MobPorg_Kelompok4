@@ -30,9 +30,29 @@ class AdminPage extends StatefulWidget {
 class _AdminPageState extends State<AdminPage> {
   bool masuk = false;
   int tab = 0;
+  String filterPesanan = 'New';
   String user = '', sandi = '', salah = '';
 
+  Timer? pengingat;
+
+  @override
+  void initState() {
+    super.initState();
+    pengingat = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (masuk && tab == 2 && filterPesanan == 'Ready') setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    pengingat?.cancel();
+    super.dispose();
+  }
+
   Future<void> ubahStatus(Map order, String baru) async {
+    if (baru == 'Completed' && order['paymentMethod'] == 'Tunai' &&
+        !await konfirmasi(context, 'Terima pembayaran tunai?',
+            'Pastikan uang ${formatRupiah(order['totalPrice'])} sudah diterima dan makanan sudah diserahkan.')) return;
     if (baru == 'Cancelled' &&
         !await konfirmasi(
           context,
@@ -119,6 +139,9 @@ class _AdminPageState extends State<AdminPage> {
         title: Text(masuk ? tabs[tab] : 'Login admin'),
         actions: [
           const SwitchModeGelap(),
+          if (masuk)
+            IconButton(tooltip: 'Masuk sebagai pelanggan', icon: const Icon(Icons.person_outline),
+                onPressed: () => Navigator.pop(context)),
           if (masuk)
             IconButton(
               tooltip: 'Keluar admin',

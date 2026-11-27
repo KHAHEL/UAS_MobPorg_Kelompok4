@@ -79,10 +79,25 @@ class _RestoranPageState extends State<RestoranPage> {
                           spacing: 8,
                           children: [
                             Text('Stok ${stok(m)}'),
-                            TextButton(
+                            OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.blue.shade800,
+                                backgroundColor: Colors.white,
+                                side: BorderSide(
+                                  color: stok(m) == 0 ? Colors.black26 : Colors.blue.shade600,
+                                  width: 1.5,
+                                ),
+                                minimumSize: const Size(112, 46),
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              icon: const Icon(Icons.add_shopping_cart, size: 18),
                               onPressed: stok(m) > dalamCart(m['id'])
-                                  ? () => buka(DetailMenu(m)) : null,
-                              child: Text(stok(m) == 0 ? 'Habis' : 'Tambah'),
+                                  ? () => buka(DetailMenu(m))
+                                  : null,
+                              label: Text(stok(m) == 0 ? 'Habis' : 'Tambah'),
                             ),
                           ],
                         ),
@@ -177,11 +192,16 @@ class _RestoranPageState extends State<RestoranPage> {
           const ListTile(
             leading: Icon(Icons.payment),
             title: Text('Pembayaran'),
+            subtitle: Text('Seluruh pembayaran di aplikasi ini berupa simulasi.'),
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () => buka(const AdminPage()),
-            child: const Text('Login admin'),
+            onPressed: () {
+              cart.clear();
+              pelangganAktif = null;
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AksesPage()));
+            },
+            child: const Text('Keluar / ganti akun'),
           ),
         ],
       );

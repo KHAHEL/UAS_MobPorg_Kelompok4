@@ -103,6 +103,11 @@ class _CartPageState extends State<CartPage> {
                 const Divider(),
                 Row(
                   children: [
+                    IconButton(
+                      tooltip: 'Hapus item',
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () => konfirmasiHapus(item),
+                    ),
                     const Spacer(),
                     tombol(Icons.remove, 'Kurangi', () => ubahJumlah(item, -1)),
                     Text("${item['quantity']}", style: _title),

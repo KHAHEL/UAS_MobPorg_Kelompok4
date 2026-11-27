@@ -1,8 +1,14 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
+import 'package:cryptography/cryptography.dart' show Pbkdf2, Hmac, SecretKey;
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:http/http.dart' as http;
 
+part 'akses_page.dart';
+part 'Pemesanan/jadwal.dart';
+part 'Pemesanan/promo_api.dart';
 part 'Admin/admin_page.dart';
 part 'Admin/admin_dashboard.dart';
 part 'Admin/admin_menu.dart';
@@ -18,6 +24,8 @@ const biruMuda = Color(0xFFE1F5FE);
 const kategori = ['Main Course', 'Snacks', 'Drinks', 'Dessert'];
 const levelPedas = ['Tidak Pedas', 'Sedang', 'Pedas'];
 const metodeBayar = ['Tunai', 'QRIS', 'Transfer Bank'];
+late Box pelangganBox;
+Map<String, dynamic>? pelangganAktif;
 late Box menus;
 late Box orders;
 final List<Map<String, dynamic>> cart = [];
@@ -30,6 +38,7 @@ Future<void> main() async {
 }
 
 Future<void> bukaDatabase() async {
+  pelangganBox = await Hive.openBox('pelanggan');
   menus = await Hive.openBox('menus');
   orders = await Hive.openBox('orders');
 
@@ -258,21 +267,34 @@ String? cekKeranjang() {
   return null;
 }
 
-Future<void> simpanPesanan(String metode, {String? jadwal}) async {
+Future<void> simpanPesanan(String metode, {String? bank, String kodePromo = '', int diskon = 0, DateTime? waktuAmbil}) async {
+  final profil = pelangganAktif;
+  if (profil == null) throw StateError('Masuk sebagai pelanggan untuk memesan.');
   final masalah = cekKeranjang();
   if (masalah != null) throw StateError(masalah);
+  if (waktuAmbil != null) {
+    final masalah = masalahJadwal(waktuAmbil, sekarangWib());
+    if (masalah != null) throw StateError(masalah);
+  }
   final waktu = DateTime.now();
   final id = 'BB-${waktu.microsecondsSinceEpoch}';
   // Simpan salinan nama dan harga agar nota lama tetap sama setelah menu diedit.
   await orders.put(id, {
     'orderId': id,
+    'customer': {for (final key in ['name', 'phone', 'address']) key: profil[key]},
+    if (metode == 'Transfer Bank') 'bank': bank,
     'orderDate': waktu.toIso8601String(),
     'items': [for (final item in cart) Map.of(item)],
-    'totalPrice': totalPrice,
+    'subtotal': totalPrice,
+    'promoCode': kodePromo,
+    'discount': diskon,
+    'totalPrice': totalPrice - diskon,
+    'pickupDate': waktuAmbil == null ? null : teksIsoWib(waktuAmbil),
+    'pickupMode': waktuAmbil == null ? 'asap' : 'scheduled',
     'paymentMethod': metode,
-    'paymentStatus': 'Lunas',
-    'orderStatus': 'Processing',
-    'pickupTime': jadwal ?? '',
+    'paymentStatus': metode == 'Tunai' ? 'Bayar saat ambil' : 'Simulasi pembayaran',
+    'orderStatus': 'New',
+    'pickupTime': waktuAmbil == null ? 'Ambil secepatnya' : teksAmbil(waktuAmbil),
   });
   cart.clear();
 }
@@ -425,7 +447,7 @@ class MyApp extends StatelessWidget {
               type: BottomNavigationBarType.fixed,
             ),
           ),
-          home: const RestoranPage(),
+          home: const AksesPage(),
         );
       },
     );
@@ -460,7 +482,6 @@ class SwitchModeGelap extends StatelessWidget {
   }
 }
 
-// DIUBAH: URL foto bawaan menu awal (dipakai jika imageUrl tersimpan kosong)
 const _fotoAwal = {
   'nasi': 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=640',
   'mie': 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=640',
@@ -476,7 +497,6 @@ const _fotoAwal = {
   'puding': 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=640',
 };
 
-// DIUBAH: foto dimuat dari URL (Image.network), tidak lagi dari folder assets
 Widget fotoMenu(Map menu, {double ukuran = 64, double? lebar}) {
   final id = menu['id'];
   final simpan = menu['imageUrl']?.toString().trim() ?? '';
@@ -518,11 +538,22 @@ Widget barisItem(Map item) {
 Widget daftarPesanan({
   void Function(Map, String)? ubahStatus,
   bool transaksi = false,
+  String? filter,
 }) {
-  if (orders.isEmpty) return const Center(child: Text('Belum ada pesanan.'));
+  final terlihat = orders.values.where((o) {
+    if (ubahStatus != null) return filter == null || o['orderStatus'] == filter;
+    return pelangganAktif != null && o['customer']?['phone'] == pelangganAktif!['phone'];
+  }).toList().reversed.toList();
+  if (ubahStatus != null && ['New', 'Processing', 'Ready'].contains(filter)) {
+    terlihat.sort((a, b) {
+      final jadwal = urutanAmbil(a).compareTo(urutanAmbil(b));
+      return jadwal != 0 ? jadwal : a['orderDate'].compareTo(b['orderDate']);
+    });
+  }
+  if (terlihat.isEmpty) return const Center(child: Text('Belum ada pesanan.'));
   return _PageList(
     children: [
-      for (final o in orders.values.toList().reversed)
+      for (final o in terlihat)
         TemaTerang(
           child: Card(
             color: biruMuda,
@@ -530,33 +561,42 @@ Widget daftarPesanan({
             child: ExpansionTile(
               textColor: Colors.black,
               iconColor: Colors.black,
-              title: Text(o['orderId']),
+              title: Text(o['customer']?['name'] ?? 'Pemesan belum tercatat', style: _title),
               subtitle: Text(
-                "${o['orderDate'].toString().substring(0, 16).replaceFirst('T', ' ')}\n${formatRupiah(o['totalPrice'])} · ${o['orderStatus']}",
+                [
+                  if (ubahStatus != null && terlambatDiambil(o)) '⚠ Lewat jadwal ambil',
+                  if (ubahStatus != null) (o['items'] as List).map((i) => "${i['quantity']}× ${i['name']}").join(', '),
+                  if (ubahStatus != null) "Ambil: ${(o['pickupTime'] ?? '').isEmpty ? 'Belum ditentukan' : o['pickupTime']}",
+                  "Dipesan: ${o['orderDate'].toString().substring(0, 16).replaceFirst('T', ' ')}",
+                  "${o['orderId']} · ${labelStatus[o['orderStatus']] ?? o['orderStatus']}",
+                  "Total: ${formatRupiah(o['totalPrice'])}",
+                ].join('\n'),
               ),
               childrenPadding: const EdgeInsets.all(12),
               children: [
+                if (o['customer'] != null)
+                  ListTile(leading: const Icon(Icons.person_outline),
+                      title: Text(o['customer']['phone']), subtitle: Text(o['customer']['address'])),
+                if (o['bank'] != null) Text("Bank: ${o['bank']}"),
+                if ((o['discount'] ?? 0) > 0) ...[
+                  Text("Subtotal: ${formatRupiah(o['subtotal'])}"),
+                  Text("Promo ${o['promoCode']}: −${formatRupiah(o['discount'])}"),
+                ],
                 for (final item in o['items']) barisItem(item),
-                Text("${o['paymentMethod']} · ${o['paymentStatus']}"),
+                Text("${o['paymentMethod']} · ${statusBayarTampil(o)}"),
                 if ((o['pickupTime'] ?? '') != '')
                   Text('Pengambilan: ${o['pickupTime']}'),
                 if (ubahStatus != null &&
                     !transaksi &&
-                    ['Processing', 'Ready'].contains(o['orderStatus']))
+                    statusBerikut.containsKey(o['orderStatus']))
                   Wrap(
                     children: [
                       TextButton(
                         onPressed: () => ubahStatus(
                           o,
-                          o['orderStatus'] == 'Processing'
-                              ? 'Ready'
-                              : 'Completed',
+                          statusBerikut[o['orderStatus']]!,
                         ),
-                        child: Text(
-                          o['orderStatus'] == 'Processing'
-                              ? 'Tandai Ready'
-                              : 'Selesaikan',
-                        ),
+                        child: Text(tombolStatus[o['orderStatus']]!),
                       ),
                       TextButton(
                         onPressed: () => ubahStatus(o, 'Cancelled'),
