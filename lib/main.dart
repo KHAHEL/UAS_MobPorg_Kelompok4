@@ -8,7 +8,6 @@ import 'package:http/http.dart' as http;
 
 part 'akses_page.dart';
 part 'Pemesanan/jadwal.dart';
-part 'Pemesanan/promo_api.dart';
 part 'Admin/admin_page.dart';
 part 'Admin/admin_dashboard.dart';
 part 'Admin/admin_menu.dart';
@@ -500,9 +499,7 @@ const _fotoAwal = {
 Widget fotoMenu(Map menu, {double ukuran = 64, double? lebar}) {
   final id = menu['id'];
   final simpan = menu['imageUrl']?.toString().trim() ?? '';
-  // Pakai URL tersimpan; kalau kosong, pakai URL bawaan menu awal
   final url = simpan.isNotEmpty ? simpan : (_fotoAwal[id] ?? '');
-  // Ikon cadangan jika tidak ada foto atau gagal dimuat
   final ikon = Container(
     color: biru,
     child: const Icon(Icons.restaurant, size: 32),
